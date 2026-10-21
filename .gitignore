@@ -7,3 +7,6 @@ team_maker.py
 naejeon.py
 games.json
 players.txt
+# 암호화 전 원본 페이지와 티어 메모 (친구 정보)
+page.html
+tiers.txt
