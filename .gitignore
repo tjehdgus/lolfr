@@ -1,0 +1,9 @@
+__pycache__/
+# 클라이언트에서 모은 원본 기록 (계정 식별값 포함)
+data.json
+cache.json
+# 예전 버전 (스크린샷 기반 / 라이엇 API 기반)
+team_maker.py
+naejeon.py
+games.json
+players.txt

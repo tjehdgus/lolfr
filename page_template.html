@@ -1,0 +1,307 @@
+<title>올빼미 내전</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* 레이아웃: 위에서 참가자 고르기 → 블루/레드 대진표 → 아래 전체 점수표. 롤 클라이언트의 남색·금색 결을 따름 */
+:root {
+  --bg: #f3f4f8;
+  --surface: #ffffff;
+  --ink: #141a2b;
+  --muted: #5d6680;
+  --line: #d9dde8;
+  --gold: #8c6a24;
+  --gold-soft: #f1e6cc;
+  --blue: #1f6fd1;
+  --blue-soft: #e3eefc;
+  --red: #c8372d;
+  --red-soft: #fbe6e3;
+  --good: #2e8a57;
+  --bad: #b8452f;
+  --font-display: "Do Hyeon", "IBM Plex Sans KR", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-num: "IBM Plex Mono", ui-monospace, "Consolas", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1020; --surface: #131a2e; --ink: #e8e3d4; --muted: #8e97ae; --line: #263052;
+    --gold: #c8aa6e; --gold-soft: #2a2516; --blue: #5aa2ff; --blue-soft: #14243f;
+    --red: #ff6b5e; --red-soft: #3a1a1a; --good: #5fc489; --bad: #ff8a6e; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b1020; --surface: #131a2e; --ink: #e8e3d4; --muted: #8e97ae; --line: #263052;
+  --gold: #c8aa6e; --gold-soft: #2a2516; --blue: #5aa2ff; --blue-soft: #14243f;
+  --red: #ff6b5e; --red-soft: #3a1a1a; --good: #5fc489; --bad: #ff8a6e; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 56px;
+}
+main { max-width: 1040px; margin: 0 auto; display: grid; gap: 36px; }
+h1, h2 { font-family: var(--font-display); font-weight: 400; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(34px, 6vw, 48px); line-height: 1.05; letter-spacing: -0.01em; }
+h2 { font-size: 26px; }
+.num { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.eyebrow { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); font-weight: 600; }
+.muted { color: var(--muted); }
+
+header { display: grid; gap: 10px; border-bottom: 1px solid var(--line); padding-bottom: 22px; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--muted); font-size: 14px; }
+.meta b { color: var(--ink); font-weight: 600; }
+
+section { display: grid; gap: 16px; }
+.section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; }
+
+.picker { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font: inherit; font-size: 14px; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; cursor: pointer;
+  display: inline-flex; gap: 8px; align-items: baseline;
+}
+.chip .num { font-size: 12px; color: var(--muted); }
+.chip[aria-pressed="true"] { background: var(--gold-soft); border-color: var(--gold); }
+.chip[aria-pressed="true"] .num { color: var(--gold); }
+.chip:focus-visible, button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+.actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.btn {
+  font: inherit; font-weight: 600; font-size: 15px; border-radius: 8px; padding: 10px 20px; cursor: pointer;
+  border: 1px solid var(--gold); background: var(--gold); color: var(--bg);
+}
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.hint { font-size: 14px; color: var(--muted); }
+
+.versus { display: grid; grid-template-columns: 1fr auto 1fr; gap: 14px; align-items: stretch; }
+.team { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; min-width: 0; }
+.team-head { display: flex; justify-content: space-between; align-items: baseline; padding: 12px 16px; }
+.team.blue .team-head { background: var(--blue-soft); color: var(--blue); }
+.team.red .team-head { background: var(--red-soft); color: var(--red); }
+.team-head h3 { font-family: var(--font-display); font-weight: 400; font-size: 22px; margin: 0; }
+.team-head .num { font-size: 18px; }
+.team ol { list-style: none; margin: 0; padding: 4px 0; }
+.team li { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 9px 16px; border-top: 1px solid var(--line); }
+.team li:first-child { border-top: 0; }
+.team .who { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.team .sub { grid-column: 1; font-size: 12.5px; color: var(--muted); }
+.team .pts { grid-row: 1 / span 2; grid-column: 2; align-self: center; font-size: 16px; }
+.vs { display: grid; place-items: center; align-content: center; gap: 4px; text-align: center; min-width: 74px; }
+.vs .big { font-family: var(--font-display); font-size: 30px; color: var(--gold); }
+.vs .diff { font-size: 13px; color: var(--muted); }
+
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 860px; }
+th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-size: 12px; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; background: var(--bg); }
+tr:last-child td { border-bottom: 0; }
+td.r, th.r { text-align: right; }
+.rank { color: var(--muted); width: 36px; }
+.name b { font-weight: 600; }
+.name .tag { color: var(--muted); font-size: 12px; margin-left: 4px; }
+.tier { display: inline-block; font-size: 12.5px; padding: 1px 8px; border-radius: 4px; border: 1px solid var(--line); }
+.tier.top { border-color: var(--gold); color: var(--gold); }
+.role { display: inline-block; min-width: 54px; text-align: right; }
+.role small { color: var(--muted); font-size: 11px; margin-left: 2px; }
+.hi { color: var(--good); font-weight: 600; }
+.lo { color: var(--bad); }
+.score { font-size: 17px; font-weight: 500; }
+.bar { height: 4px; background: var(--line); border-radius: 2px; margin-top: 4px; width: 90px; margin-left: auto; }
+.bar i { display: block; height: 100%; background: var(--gold); border-radius: 2px; }
+
+.how { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px 28px; font-size: 14px; color: var(--muted); }
+.how h3 { font-size: 15px; color: var(--ink); margin: 0 0 4px; font-weight: 600; }
+.how p { margin: 0; max-width: 62ch; }
+
+@media (max-width: 680px) {
+  .versus { grid-template-columns: 1fr; }
+  .vs { grid-auto-flow: column; justify-content: center; gap: 12px; min-width: 0; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .team li { animation: rise .28s ease both; }
+  @keyframes rise { from { transform: translateY(4px); opacity: .4; } to { transform: none; opacity: 1; } }
+}
+</style>
+
+<main>
+  <header>
+    <span class="eyebrow">칼바람 증강 · 사용자 설정 내전</span>
+    <h1>올빼미 내전 팀 짜기</h1>
+    <div class="meta" id="meta"></div>
+  </header>
+
+  <section aria-labelledby="pick-h">
+    <div class="section-head">
+      <h2 id="pick-h">오늘 참가자</h2>
+      <span class="hint" id="pick-count"></span>
+    </div>
+    <div class="picker" id="picker"></div>
+    <div class="actions">
+      <button class="btn" id="make">팀 짜기</button>
+      <button class="btn ghost" id="shuffle">비슷한 조합으로 다시 섞기</button>
+      <span class="hint" id="options"></span>
+    </div>
+  </section>
+
+  <section aria-labelledby="match-h">
+    <h2 id="match-h" hidden>대진</h2>
+    <div class="versus" id="versus"></div>
+  </section>
+
+  <section aria-labelledby="table-h">
+    <div class="section-head">
+      <h2 id="table-h">전체 점수표</h2>
+      <span class="hint">역할 칸: 그 역할 챔피언일 때 활약 점수 (판수) · 평균 50</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th></th><th>소환사</th><th class="r">레벨</th><th>솔랭 현재 / 최고</th>
+            <th class="r">내전 승/판</th><th class="r">평소 증강</th>
+            <th class="r">딜러</th><th class="r">브루저</th><th class="r">탱커</th><th class="r">서포터</th>
+            <th class="r">점수</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="how-h">
+    <h2 id="how-h">점수는 이렇게 매겨요</h2>
+    <div class="how" id="how"></div>
+  </section>
+</main>
+
+<script>
+const DATA = __DATA__;
+const players = DATA.players;
+const ROLES = ["딜러", "브루저", "탱커", "서포터"];
+const TOLERANCE = 3;   // 최적 조합과 이 점수 차이 안쪽이면 후보로 섞음
+const MAX_PICK = 12;
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+// 처음엔 내전 판수가 많은 10명
+let picked = new Set(players.map((p, i) => [p.games, i]).sort((a, b) => b[0] - a[0]).slice(0, 10).map(([, i]) => i));
+let candidates = [];
+let lastShown = -1;
+
+$("meta").innerHTML =
+  `<span>내전 <b class="num">${DATA.games}</b>판</span>` +
+  `<span>참가자 <b class="num">${players.length}</b>명</span>` +
+  `<span>기간 <b class="num">${DATA.from} – ${DATA.to}</b></span>` +
+  `<span>업데이트 <span class="num">${DATA.updated}</span></span>`;
+
+function renderPicker() {
+  $("picker").innerHTML = players.map((p, i) =>
+    `<button class="chip" id="chip-${i}" data-i="${i}" aria-pressed="${picked.has(i)}">${esc(p.name)}<span class="num">Lv.${p.level ?? "-"} · ${p.score.toFixed(1)}</span></button>`
+  ).join("");
+  const n = picked.size;
+  $("pick-count").textContent = n === 10 ? "10명 선택됨 · 5대5" : `${n}명 선택됨` + (n >= 2 ? ` · ${Math.floor(n / 2)}대${Math.ceil(n / 2)}` : "");
+  $("make").disabled = n < 2;
+  $("shuffle").disabled = candidates.length < 2;
+}
+
+$("picker").addEventListener("click", (e) => {
+  const chip = e.target.closest(".chip");
+  if (!chip) return;
+  const i = Number(chip.dataset.i);
+  if (picked.has(i)) picked.delete(i);
+  else if (picked.size < MAX_PICK) picked.add(i);
+  renderPicker();
+});
+
+function* combinations(n, k, start = 0, acc = []) {
+  if (acc.length === k) { yield acc.slice(); return; }
+  for (let i = start; i < n; i++) { acc.push(i); yield* combinations(n, k, i + 1, acc); acc.pop(); }
+}
+
+function buildCandidates() {
+  const pool = [...picked];
+  const n = pool.length, total = pool.reduce((s, i) => s + players[i].score, 0);
+  const splits = [];
+  for (const combo of combinations(n, Math.floor(n / 2))) {
+    if (n % 2 === 0 && combo[0] !== 0) continue; // 좌우만 바뀐 조합 제외
+    const set = new Set(combo);
+    const a = combo.map((j) => pool[j]);
+    const b = pool.filter((_, j) => !set.has(j));
+    const sa = a.reduce((s, i) => s + players[i].score, 0);
+    splits.push({ diff: Math.abs(total - 2 * sa), a, b });
+  }
+  splits.sort((x, y) => x.diff - y.diff);
+  candidates = splits.filter((s) => s.diff <= splits[0].diff + TOLERANCE).slice(0, 12);
+  $("options").textContent = `공평한 조합 ${candidates.length}개 중에서 뽑아요`;
+}
+
+function teamHTML(side, label, idx) {
+  const list = idx.map((i) => players[i]).sort((x, y) => y.score - x.score);
+  const sum = list.reduce((s, p) => s + p.score, 0);
+  return `<div class="team ${side}">
+    <div class="team-head"><h3>${label}</h3><span class="num">${sum.toFixed(1)}</span></div>
+    <ol>${list.map((p) => `<li>
+      <span class="who">${esc(p.name)}</span>
+      <span class="sub">Lv.${p.level ?? "-"} · 최고 ${esc(p.tierBest)} · 내전 ${p.wins}승 ${p.games - p.wins}패</span>
+      <span class="pts num">${p.score.toFixed(1)}</span></li>`).join("")}</ol>
+  </div>`;
+}
+
+function showSplit() {
+  if (!candidates.length) return;
+  let k = Math.floor(Math.random() * candidates.length);
+  if (candidates.length > 1 && k === lastShown) k = (k + 1) % candidates.length;
+  lastShown = k;
+  let { a, b, diff } = candidates[k];
+  if (Math.random() < 0.5) [a, b] = [b, a];
+  $("versus").innerHTML =
+    teamHTML("blue", "블루팀", a) +
+    `<div class="vs"><span class="big">VS</span><span class="diff">점수 차이<br><b class="num">${diff.toFixed(1)}</b></span></div>` +
+    teamHTML("red", "레드팀", b);
+  renderPicker();
+}
+
+$("make").addEventListener("click", () => { buildCandidates(); lastShown = -1; showSplit(); });
+$("shuffle").addEventListener("click", showSplit);
+
+function cls(v) { return v == null ? "" : v >= 60 ? "hi" : v <= 40 ? "lo" : ""; }
+
+function renderTable() {
+  const max = Math.max(...players.map((p) => p.score)), min = Math.min(...players.map((p) => p.score));
+  $("rows").innerHTML = players.map((p, i) => {
+    const roles = ROLES.map((r) => {
+      const v = p.roles[r];
+      return `<td class="r">${v ? `<span class="role num ${cls(v[0])}">${v[0]}<small>(${v[1]})</small></span>` : `<span class="muted">-</span>`}</td>`;
+    }).join("");
+    const width = max === min ? 100 : 15 + 85 * (p.score - min) / (max - min);
+    const best = p.tierBest !== "언랭";
+    return `<tr>
+      <td class="rank num">${i + 1}</td>
+      <td class="name"><b>${esc(p.name)}</b><span class="tag">#${esc(p.tag)}</span></td>
+      <td class="r num">${p.level ?? "-"}</td>
+      <td><span class="tier">${esc(p.tierNow)}</span> <span class="muted">/</span> <span class="tier ${best ? "top" : ""}">${esc(p.tierBest)}</span></td>
+      <td class="r num">${p.wins}/${p.games}</td>
+      <td class="r num">${p.pubGames ? `${p.pubWins}/${p.pubGames}` : "-"}</td>
+      ${roles}
+      <td class="r"><span class="score num">${p.score.toFixed(1)}</span><div class="bar"><i style="width:${width}%"></i></div></td>
+    </tr>`;
+  }).join("");
+}
+
+function renderHow() {
+  const w = DATA.weights, pct = (k) => Math.round(w[k] * 100);
+  $("how").innerHTML = `
+    <div><h3>챔피언 역할로 나눠서 비교</h3><p>챔피언마다 딜러·브루저·탱커·서포터 중 하나로 나눠요. 딜러는 딜량과 KDA, 탱커는 받은 피해와 CC, 서포터는 킬 관여와 회복량을 주로 봐요. 그리고 같은 역할끼리 비교해서 탱커가 딜이 낮다고 손해 보지 않아요.</p></div>
+    <div><h3>내전 활약 ${pct("내전활약")}% · 내전 승률 ${pct("내전승률")}%</h3><p>같은 판 10명 안에서 기록을 비교해요. 판 길이나 증강 운이 덜 섞여요. 판수가 적은 사람은 점수를 평균 쪽으로 조금 당겨요.</p></div>
+    <div><h3>평소 증강 ${pct("평소활약") + pct("평소승률")}% · 티어 ${pct("티어")}%</h3><p>각자 일반 큐 증강 최근 판의 분당 기록과 승률, 그리고 솔로랭크 최고 티어를 반영해요. 자유랭크는 빼요. 이번 시즌 최고 티어는 롤 클라이언트에서, 시즌 3부터의 지난 시즌 티어는 fow.lol과 op.gg 시즌 기록에서 가져와 가장 높은 걸 써요. 지난 시즌 기록이 더 높아서 그걸 쓴 경우 * 표시가 붙어요.</p></div>
+    <div><h3>팀 나누기</h3><p>가능한 모든 조합의 점수 합을 계산해요. 최적 조합과 ${TOLERANCE}점 안쪽인 조합들 중에서 랜덤으로 골라서 매번 같은 팀이 되지 않게 해요.</p></div>`;
+}
+
+renderTable();
+renderHow();
+buildCandidates();
+showSplit();
+</script>
